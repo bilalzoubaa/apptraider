@@ -24,6 +24,8 @@ def create_app():
     db.init_app(app)
     with app.app_context():
         db.create_all()
+        from .blueprints.challenges import seed_default_plans
+        seed_default_plans()
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(challenges_bp, url_prefix="/api/challenges")
     app.register_blueprint(trades_bp, url_prefix="/api/trades")

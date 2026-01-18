@@ -15,7 +15,15 @@ def checkout():
         return jsonify({"error": "invalid"}), 400
     pay = Payment(user_id=user_id, amount=float(plan.price_dh), method=method, status="success", meta={"gateway": method})
     db.session.add(pay)
-    uc = UserChallenge(user_id=user_id, challenge_id=challenge_id, status="active", equity=plan.starting_balance, highest_equity=plan.starting_balance, lowest_equity=plan.starting_balance)
+    uc = UserChallenge(
+        user_id=user_id, 
+        challenge_id=challenge_id, 
+        status="active", 
+        equity=plan.starting_balance, 
+        daily_start_equity=plan.starting_balance,
+        highest_equity=plan.starting_balance, 
+        lowest_equity=plan.starting_balance
+    )
     db.session.add(uc)
     db.session.commit()
     return jsonify({"payment_id": pay.id, "user_challenge_id": uc.id, "status": "success"})

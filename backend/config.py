@@ -7,7 +7,10 @@ class Config:
     # Database configuration
     # We use a local SQLite database named 'tradesense_dev.db' to avoid lock issues
     DB_PATH = os.path.join(BASE_DIR, 'database', 'tradesense_dev.db')
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
+    _db_url = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
+    if _db_url.startswith("postgres://"):
+        _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_DATABASE_URI = _db_url
     
     # Disable modification tracking to save memory
     SQLALCHEMY_TRACK_MODIFICATIONS = False

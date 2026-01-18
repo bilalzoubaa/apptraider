@@ -13,6 +13,7 @@ const STATUS_CONFIG = {
 
 const TICKERS = {
   US: ["AAPL", "TSLA", "MSFT", "GOOGL", "AMZN"],
+  Crypto: ["BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD"],
   Maroc: ["IAM", "ATW", "BCP", "LXV", "SID"]
 };
 
@@ -35,7 +36,11 @@ export default function Dashboard() {
   const [quantity, setQuantity] = useState(1);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(false);
-  const [notification, setNotification] = useState(null); // { type: 'success'|'error', message: '' }
+  const [notification, setNotification] = useState(null);
+  const [priceSource, setPriceSource] = useState("Yahoo");
+  const [dailyLossPct, setDailyLossPct] = useState(0);
+  const [totalLossPct, setTotalLossPct] = useState(0);
+  const [profitPct, setProfitPct] = useState(0);
 
   const { challengeId } = useContext(UserContext);
 
@@ -103,15 +108,25 @@ export default function Dashboard() {
     setLoadingPrice(true);
     try {
       let p = 0;
+      let source = "Yahoo Finance";
+      let error = null;
+
       if (market === "Maroc") {
-        const r = await axios.get("/api/market/casablanca", { params: { ticker: symbol } });
+        const r = await axios.get("/api/market/maroc/price", { params: { symbol } });
         p = r.data.price;
+        source = r.data.source || "Casablanca (Scraper)";
+        if (r.data.warning === "SCRAPE_FAILED_USED_CACHE") {
+          error = "Mode dégradé : Live indisponible (Prix en cache)";
+        }
       } else {
         const r = await axios.get("/api/market/price", { params: { symbol } });
         p = r.data.price;
+        source = market === "Crypto" ? "Binance/Crypto" : "Yahoo Finance";
       }
-      setPriceError(null);
+
+      setPriceError(error);
       setPrice(p);
+      setPriceSource(source);
       setLastUpdated(new Date());
 
       const t = Math.floor(Date.now() / 1000);
@@ -119,7 +134,7 @@ export default function Dashboard() {
       updateSignals(p, t);
     } catch (err) {
       console.error("Erreur récupération prix:", err);
-      setPriceError("Indisponible");
+      setPriceError(market === "Maroc" ? "Live IAM indisponible" : "Serveur déconnecté");
     } finally {
       setLoadingPrice(false);
     }
@@ -135,6 +150,9 @@ export default function Dashboard() {
       setProfitTargetPct(summary.data.profit_target_pct);
       setMaxDailyLossPct(summary.data.max_daily_loss_pct);
       setMaxTotalLossPct(summary.data.max_total_loss_pct);
+      setDailyLossPct(summary.data.daily_loss_pct);
+      setTotalLossPct(summary.data.total_loss_pct);
+      setProfitPct(summary.data.profit_pct);
       setTrades(summary.data.trades || []);
     } catch (err) {
       console.error("Erreur sync challenge:", err);
@@ -189,13 +207,6 @@ export default function Dashboard() {
     }
   };
 
-  // derived state
-  const profitPct = startingBalance ? ((equity ?? 0) - startingBalance) / startingBalance * 100 : 0;
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const dailyPnl = trades.filter(t => (t.timestamp || "").startsWith(todayStr)).reduce((acc, t) => acc + (t.pnl || 0), 0);
-  const totalPnl = trades.reduce((acc, t) => acc + (t.pnl || 0), 0);
-  const dailyLossPct = startingBalance && dailyPnl < 0 ? Math.abs(dailyPnl) / startingBalance * 100 : 0;
-  const totalLossPct = startingBalance && totalPnl < 0 ? Math.abs(totalPnl) / startingBalance * 100 : 0;
   const nearDailyLimit = dailyLossPct >= (maxDailyLossPct * 0.8);
   const nearTotalLimit = totalLossPct >= (maxTotalLossPct * 0.8);
 
@@ -245,6 +256,7 @@ export default function Dashboard() {
                 onChange={e => { setMarket(e.target.value); setSymbol(TICKERS[e.target.value][0]); }}
               >
                 <option value="US">🇺🇸 US Market</option>
+                <option value="Crypto">₿ Crypto</option>
                 <option value="Maroc">🇲🇦 Casablanca</option>
               </select>
 
@@ -263,7 +275,7 @@ export default function Dashboard() {
                   {priceError ? <span className="text-red-500">{t('error')}</span> : (price ? `$${price.toFixed(2)}` : "...")}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {loadingPrice ? "..." : (lastUpdated ? `${t('last_updated')} ${lastUpdated.toLocaleTimeString()}` : "")} • {t('source')}: {market === "Maroc" ? "BVC" : "Yahoo"}
+                  {loadingPrice ? "..." : (lastUpdated ? `${t('last_updated')} ${lastUpdated.toLocaleTimeString()}` : "")} • {t('source')}: {priceSource}
                 </div>
               </div>
             </div>

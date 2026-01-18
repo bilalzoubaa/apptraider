@@ -97,7 +97,9 @@ def summary():
     equity = cash_balance + unrealized_pnl
     uc.equity = equity
     db.session.commit()
-    evaluate_rules(uc.id)
+    
+    metrics = evaluate_rules(uc.id)
+    
     return jsonify({
         "status": uc.status,
         "equity": round(equity, 2),
@@ -105,6 +107,9 @@ def summary():
         "unrealized_pnl": round(unrealized_pnl, 2),
         "realized_pnl": round(realized_pnl, 2),
         "starting_balance": plan.starting_balance,
+        "profit_pct": metrics["profit_pct"] if metrics else 0,
+        "daily_loss_pct": metrics["daily_loss_pct"] if metrics else 0,
+        "total_loss_pct": metrics["total_loss_pct"] if metrics else 0,
         "profit_target_pct": plan.profit_target_pct,
         "max_daily_loss_pct": plan.max_daily_loss_pct,
         "max_total_loss_pct": plan.max_total_loss_pct,

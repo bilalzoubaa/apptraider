@@ -24,8 +24,10 @@ class UserChallenge(db.Model):
     start_date = db.Column(db.DateTime, default=datetime.utcnow)
     end_date = db.Column(db.DateTime)
     equity = db.Column(db.Float, nullable=False)
+    daily_start_equity = db.Column(db.Float, nullable=False)
     highest_equity = db.Column(db.Float, nullable=False)
     lowest_equity = db.Column(db.Float, nullable=False)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Trade(db.Model):
     id = db.Column(db.Integer, primary_key=True)

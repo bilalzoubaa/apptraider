@@ -56,7 +56,7 @@ export default function Login() {
             setError("Données invalides.");
           }
         } else {
-          setError("Une erreur est survenue sur le serveur.");
+          setError(err.response.data?.message || "Une erreur est survenue sur le serveur.");
         }
       } else if (err.message) {
         setError(err.message);
